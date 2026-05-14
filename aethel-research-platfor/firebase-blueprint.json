@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "ResearchPaper": {
+      "title": "Research Paper",
+      "description": "A scientific paper with rich media and interactive diagrams.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "author": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "themeColor": { "type": "string" },
+        "heroMedia": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["animation", "video", "youtube"] },
+            "url": { "type": "string" }
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": { 
+             "type": "object",
+             "properties": {
+                "id": { "type": "string" },
+                "type": { "type": "string" },
+                "content": { "type": "string" },
+                "metadata": { "type": "object" }
+             }
+          }
+        },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "title", "author", "ownerId"]
+    }
+  },
+  "firestore": {
+    "research_papers/{paperId}": {
+      "schema": "ResearchPaper",
+      "description": "Collection of research papers created by users."
+    }
+  }
+}

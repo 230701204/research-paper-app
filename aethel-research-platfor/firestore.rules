@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(resourceData) {
+      return isSignedIn() && resourceData.ownerId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Research Paper Validation
+    function isValidPaper(data) {
+      return data.keys().hasAll(['id', 'title', 'author', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.author is string && data.author.size() <= 100 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is number &&
+             data.updatedAt is number &&
+             data.blocks is list &&
+             data.blocks.size() <= 50; // Limit blocks to prevent abuse
+    }
+
+    match /research_papers/{paperId} {
+      // Publicly readable
+      allow read: if true;
+
+      // Create: user must be signed in and become owner
+      allow create: if isSignedIn() && isValidId(paperId) && isValidPaper(incoming());
+
+      // Update: only owner can edit
+      allow update: if isOwner(existing()) && isValidPaper(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt;
+
+      // Delete: only owner can delete
+      allow delete: if isOwner(existing());
+    }
+  }
+}
